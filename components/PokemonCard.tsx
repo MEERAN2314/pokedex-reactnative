@@ -1,4 +1,4 @@
-import { BorderRadius, Spacing, useTheme } from '@/constants/Theme'
+import { Spacing, useTheme } from '@/constants/Theme'
 import { usePokemon } from '@/hooks/usePokemon'
 import { TYPE_COLORS } from '@/types/pokemon'
 import * as Haptics from 'expo-haptics'
@@ -9,10 +9,10 @@ import React, { memo, useEffect } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, {
     Easing,
+    FadeInUp,
     interpolate,
     useAnimatedStyle,
     useSharedValue,
-    withDelay,
     withRepeat,
     withSequence,
     withSpring,
@@ -31,73 +31,47 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ name, url, index }) 
   const pokemonId = url.split('/').slice(-2, -1)[0]
   const { data: pokemon, isLoading, error } = usePokemon(pokemonId)
   
-  const scale = useSharedValue(0.8)
-  const opacity = useSharedValue(0)
-  const translateY = useSharedValue(30)
-  const rotate = useSharedValue(0)
+  const scale = useSharedValue(1)
   const shimmer = useSharedValue(0)
+  const pressScale = useSharedValue(1)
 
   useEffect(() => {
-    // Staggered entrance animation
-    const delay = index * 50
-    opacity.value = withDelay(delay, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }))
-    scale.value = withDelay(delay, withSpring(1, { damping: 20, stiffness: 200 }))
-    translateY.value = withDelay(delay, withSpring(0, { damping: 20, stiffness: 150 }))
-    
-    // Subtle shimmer effect
-    shimmer.value = withDelay(delay + 200, withRepeat(
+    // Continuous subtle shimmer effect
+    shimmer.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 2000 }),
-        withTiming(0, { duration: 2000 })
+        withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
-      false
-    ))
-  }, [index])
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { scale: scale.value },
-        { translateY: translateY.value },
-        { rotateZ: `${rotate.value}deg` }
-      ],
-      opacity: opacity.value,
-    }
-  })
+      true
+    )
+  }, [])
 
   const shimmerStyle = useAnimatedStyle(() => {
     const translateX = interpolate(shimmer.value, [0, 1], [-200, 200])
     return {
       transform: [{ translateX }],
-      opacity: shimmer.value * 0.3,
+      opacity: shimmer.value * 0.2,
     }
   })
-
-  const pressScale = useSharedValue(1)
-  const pressRotate = useSharedValue(0)
   
   const pressAnimatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        { scale: pressScale.value },
-        { rotateZ: `${pressRotate.value}deg` }
-      ]
+      transform: [{ scale: pressScale.value }]
     }
   })
 
   const handlePressIn = () => {
-    pressScale.value = withSpring(0.96, { damping: 20, stiffness: 400 })
-    pressRotate.value = withSpring(-1, { damping: 15, stiffness: 300 })
+    pressScale.value = withSpring(0.97, { damping: 15, stiffness: 400 })
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }
 
   const handlePressOut = () => {
-    pressScale.value = withSpring(1, { damping: 20, stiffness: 400 })
-    pressRotate.value = withSpring(0, { damping: 15, stiffness: 300 })
+    pressScale.value = withSpring(1, { damping: 15, stiffness: 400 })
   }
 
   const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     router.push(`/pokemon/${pokemonId}`)
   }
 
@@ -109,14 +83,17 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ name, url, index }) 
   const displayId = pokemon?.id || pokemonId
 
   return (
-    <Animated.View style={[pressAnimatedStyle, { marginHorizontal: Spacing.md, marginVertical: Spacing.xs }]}>
+    <Animated.View 
+      entering={FadeInUp.delay(index * 30).duration(400).springify().damping(15).stiffness(100)}
+      style={styles.container}
+    >
       <Pressable
+        onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        onPress={handlePress}
         style={styles.pressable}
       >
-        <Animated.View style={[animatedStyle, styles.card]}>
+        <Animated.View style={[pressAnimatedStyle, styles.card]}>
           <LinearGradient
             colors={[backgroundColor, secondaryColor]}
             start={{ x: 0, y: 0 }}
@@ -153,8 +130,11 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ name, url, index }) 
                     source={{ uri: pokemon.sprites.other['official-artwork'].front_default }}
                     style={styles.pokemonImage}
                     contentFit="contain"
-                    transition={300}
+                    transition={200}
                     cachePolicy="memory-disk"
+                    priority="normal"
+                    recyclingKey={pokemon.name}
+                    placeholder={{ blurhash: 'L5H2EC=PM+yV0g-mq.wG9c010J}I' }}
                   />
                 ) : (
                   <View style={[styles.pokemonImage, styles.placeholderImage]}>
@@ -170,26 +150,35 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ name, url, index }) 
   )
 }
 
-export const PokemonCard = memo(PokemonCardComponent)
+export const PokemonCard = memo(PokemonCardComponent, (prevProps, nextProps) => {
+  // Only re-render if name, url, or index changes
+  return prevProps.name === nextProps.name && 
+         prevProps.url === nextProps.url && 
+         prevProps.index === nextProps.index
+})
 
 const styles = StyleSheet.create({
+  container: {
+    marginHorizontal: Spacing.md,
+    marginVertical: Spacing.xs,
+  },
   pressable: {
     flex: 1,
   },
   card: {
-    borderRadius: BorderRadius.xl,
-    minHeight: 120,
+    borderRadius: 20,
+    minHeight: 130,
     overflow: 'hidden',
   },
   gradientCard: {
     flex: 1,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 10,
     overflow: 'hidden',
   },
   shimmer: {
@@ -206,22 +195,22 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   circle1: {
-    width: 120,
-    height: 120,
-    top: -40,
-    right: -40,
+    width: 140,
+    height: 140,
+    top: -50,
+    right: -50,
   },
   circle2: {
-    width: 80,
-    height: 80,
-    bottom: -20,
-    left: -20,
+    width: 90,
+    height: 90,
+    bottom: -30,
+    left: -30,
   },
   circle3: {
-    width: 60,
-    height: 60,
-    top: 20,
-    left: -10,
+    width: 70,
+    height: 70,
+    top: 30,
+    left: -20,
   },
   cardContent: {
     flex: 1,
@@ -238,21 +227,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pokemonName: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '800',
     color: 'white',
     textTransform: 'capitalize',
     marginBottom: Spacing.xs,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    letterSpacing: 0.5,
   },
   pokemonId: {
-    fontSize: 14,
+    fontSize: 15,
     color: 'white',
-    opacity: 0.9,
+    opacity: 0.95,
     marginBottom: Spacing.sm,
-    fontWeight: '600',
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   typesContainer: {
     flexDirection: 'row',
@@ -261,18 +254,18 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   pokemonImage: {
-    width: 90,
-    height: 90,
+    width: 100,
+    height: 100,
   },
   placeholderImage: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 45,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingDot: {
     color: 'white',
-    fontSize: 24,
-    opacity: 0.5,
+    fontSize: 28,
+    opacity: 0.6,
   },
 })

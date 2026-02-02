@@ -78,3 +78,34 @@ export const TYPE_COLORS: Record<string, string> = {
   steel: '#B8B8D0',
   fairy: '#EE99AC',
 }
+
+export interface EvolutionChain {
+  id: number
+  chain: EvolutionChainLink
+}
+
+export interface EvolutionChainLink {
+  species: {
+    name: string
+    url: string
+  }
+  evolution_details: Array<{
+    min_level?: number
+    trigger: {
+      name: string
+    }
+    item?: {
+      name: string
+    }
+  }>
+  evolves_to: EvolutionChainLink[]
+}
+
+export type SortOption = 'number' | 'name' | 'height' | 'weight'
+export type SortDirection = 'asc' | 'desc'
+
+export interface FilterOptions {
+  types: string[]
+  sortBy: SortOption
+  sortDirection: SortDirection
+}

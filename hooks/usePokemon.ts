@@ -39,3 +39,11 @@ export const useSearchPokemon = (query: string) => {
     enabled: query.length > 0,
   })
 }
+
+export const useEvolutionChain = (url: string | undefined) => {
+  return useQuery({
+    queryKey: ['evolution-chain', url],
+    queryFn: () => pokemonApi.getEvolutionChain(url!),
+    enabled: !!url,
+  })
+}
