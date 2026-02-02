@@ -5,7 +5,16 @@ import { PokemonListItem } from '@/types/pokemon'
 import { LinearGradient } from 'expo-linear-gradient'
 import React, { useCallback } from 'react'
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import Animated, {
+    Extrapolate,
+    interpolate,
+    useAnimatedScrollHandler,
+    useAnimatedStyle,
+    useSharedValue
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<PokemonListItem>)
 
 export default function HomeScreen() {
   const theme = useTheme()
@@ -20,6 +29,32 @@ export default function HomeScreen() {
   } = usePokemonList(20)
 
   const pokemonList = data?.pages.flatMap(page => page.results) || []
+  const scrollY = useSharedValue(0)
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y
+    },
+  })
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [0, 100],
+      [1, 0.7],
+      Extrapolate.CLAMP
+    )
+    const translateY = interpolate(
+      scrollY.value,
+      [0, 100],
+      [0, -20],
+      Extrapolate.CLAMP
+    )
+    return {
+      opacity,
+      transform: [{ translateY }],
+    }
+  })
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -91,7 +126,7 @@ export default function HomeScreen() {
         style={styles.gradientBackground}
       >
         <SafeAreaView edges={['top']}>
-          <View style={styles.header}>
+          <Animated.View style={[styles.header, headerAnimatedStyle]}>
             <View style={styles.headerContent}>
               <View>
                 <Text style={[styles.title, { color: theme.text }]}>
@@ -105,10 +140,10 @@ export default function HomeScreen() {
                 <Text style={styles.pokeballText}>⚪</Text>
               </View>
             </View>
-          </View>
+          </Animated.View>
         </SafeAreaView>
         
-        <FlatList
+        <AnimatedFlatList
           data={pokemonList}
           renderItem={renderPokemonCard}
           keyExtractor={(item) => item.name}
@@ -125,11 +160,14 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={50}
-          initialNumToRender={10}
-          windowSize={10}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={30}
+          initialNumToRender={8}
+          windowSize={5}
           getItemLayout={getItemLayout}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
         />
       </LinearGradient>
     </View>

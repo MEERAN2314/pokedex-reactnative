@@ -13,6 +13,7 @@ import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, {
   Easing,
+  Extrapolate,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -95,15 +96,15 @@ export default function PokemonDetailScreen() {
   }
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [0, 100], [1, 0])
+    const opacity = interpolate(scrollY.value, [0, 100], [1, 0], Extrapolate.CLAMP)
     return {
       opacity: headerOpacity.value * opacity,
     }
   })
 
   const imageAnimatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(scrollY.value, [0, 200], [1, 0.8], 'clamp')
-    const translateY = interpolate(scrollY.value, [0, 200], [0, -50], 'clamp')
+    const scale = interpolate(scrollY.value, [0, 200], [1, 0.7], Extrapolate.CLAMP)
+    const translateY = interpolate(scrollY.value, [0, 200], [0, -50], Extrapolate.CLAMP)
     const rotate = interpolate(imageRotate.value, [0, 360], [0, 360])
     
     return {
@@ -115,17 +116,32 @@ export default function PokemonDetailScreen() {
     }
   })
 
-  const contentAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: contentTranslateY.value }],
-  }))
+  const contentAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      scrollY.value,
+      [0, 100],
+      [contentTranslateY.value, contentTranslateY.value - 10],
+      Extrapolate.CLAMP
+    )
+    return {
+      transform: [{ translateY }],
+    }
+  })
 
   const heartAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: heartScale.value }],
   }))
 
   const headerBlurStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [0, 100], [0, 1], 'clamp')
+    const opacity = interpolate(scrollY.value, [0, 100], [0, 1], Extrapolate.CLAMP)
     return { opacity }
+  })
+
+  const gradientAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(scrollY.value, [0, 300], [0, -100], Extrapolate.CLAMP)
+    return {
+      transform: [{ translateY }],
+    }
   })
 
   if (isLoading || !pokemon) {
@@ -159,81 +175,84 @@ export default function PokemonDetailScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
+        decelerationRate="fast"
       >
-        <LinearGradient
-          colors={[backgroundColor, backgroundColor + 'DD', backgroundColor + '99', theme.background]}
-          style={styles.headerGradient}
-        >
-          <SafeAreaView edges={['top']}>
-            <Animated.View style={[headerAnimatedStyle, styles.header]}>
-              <View style={styles.headerTop}>
-                <Pressable onPress={() => router.back()} style={styles.backButton}>
-                  {Platform.OS === 'ios' ? (
-                    <BlurView intensity={80} tint="light" style={styles.blurButton}>
-                      <IconSymbol name="chevron.left" size={24} color="white" />
-                    </BlurView>
-                  ) : (
-                    <View style={[styles.backButtonInner, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                      <IconSymbol name="chevron.left" size={24} color="white" />
-                    </View>
-                  )}
-                </Pressable>
-                <View style={styles.headerRight}>
-                  <View style={[styles.pokemonNumber, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                    <Text style={styles.pokemonNumberText}>
-                      #{pokemon.id.toString().padStart(3, '0')}
-                    </Text>
-                  </View>
-                  <Pressable onPress={toggleFavorite} style={styles.favoriteButton}>
+        <Animated.View style={gradientAnimatedStyle}>
+          <LinearGradient
+            colors={[backgroundColor, backgroundColor + 'DD', backgroundColor + '99', theme.background]}
+            style={styles.headerGradient}
+          >
+            <SafeAreaView edges={['top']}>
+              <Animated.View style={[headerAnimatedStyle, styles.header]}>
+                <View style={styles.headerTop}>
+                  <Pressable onPress={() => router.back()} style={styles.backButton}>
                     {Platform.OS === 'ios' ? (
                       <BlurView intensity={80} tint="light" style={styles.blurButton}>
-                        <Animated.View style={heartAnimatedStyle}>
-                          <IconSymbol 
-                            name={isFavorite ? "heart.fill" : "heart"} 
-                            size={24} 
-                            color="white" 
-                          />
-                        </Animated.View>
+                        <IconSymbol name="chevron.left" size={24} color="white" />
                       </BlurView>
                     ) : (
-                      <View style={[styles.favoriteButtonInner, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                        <Animated.View style={heartAnimatedStyle}>
-                          <IconSymbol 
-                            name={isFavorite ? "heart.fill" : "heart"} 
-                            size={24} 
-                            color="white" 
-                          />
-                        </Animated.View>
+                      <View style={[styles.backButtonInner, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
+                        <IconSymbol name="chevron.left" size={24} color="white" />
                       </View>
                     )}
                   </Pressable>
+                  <View style={styles.headerRight}>
+                    <View style={[styles.pokemonNumber, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
+                      <Text style={styles.pokemonNumberText}>
+                        #{pokemon.id.toString().padStart(3, '0')}
+                      </Text>
+                    </View>
+                    <Pressable onPress={toggleFavorite} style={styles.favoriteButton}>
+                      {Platform.OS === 'ios' ? (
+                        <BlurView intensity={80} tint="light" style={styles.blurButton}>
+                          <Animated.View style={heartAnimatedStyle}>
+                            <IconSymbol 
+                              name={isFavorite ? "heart.fill" : "heart"} 
+                              size={24} 
+                              color="white" 
+                            />
+                          </Animated.View>
+                        </BlurView>
+                      ) : (
+                        <View style={[styles.favoriteButtonInner, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
+                          <Animated.View style={heartAnimatedStyle}>
+                            <IconSymbol 
+                              name={isFavorite ? "heart.fill" : "heart"} 
+                              size={24} 
+                              color="white" 
+                            />
+                          </Animated.View>
+                        </View>
+                      )}
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
 
-              <Text style={styles.pokemonName}>
-                {pokemon.name}
-              </Text>
+                <Text style={styles.pokemonName}>
+                  {pokemon.name}
+                </Text>
 
-              <View style={styles.typesContainer}>
-                {pokemon.types.map((type) => (
-                  <PokemonType key={type.type.name} type={type.type.name} size="medium" />
-                ))}
-              </View>
+                <View style={styles.typesContainer}>
+                  {pokemon.types.map((type) => (
+                    <PokemonType key={type.type.name} type={type.type.name} size="medium" />
+                  ))}
+                </View>
 
-              <View style={styles.imageContainer}>
-                <Animated.View style={imageAnimatedStyle}>
-                  <Image
-                    source={{ uri: pokemon.sprites.other['official-artwork'].front_default }}
-                    style={styles.pokemonImage}
-                    contentFit="contain"
-                    transition={500}
-                    cachePolicy="memory-disk"
-                  />
-                </Animated.View>
-              </View>
-            </Animated.View>
-          </SafeAreaView>
-        </LinearGradient>
+                <View style={styles.imageContainer}>
+                  <Animated.View style={imageAnimatedStyle}>
+                    <Image
+                      source={{ uri: pokemon.sprites.other['official-artwork'].front_default }}
+                      style={styles.pokemonImage}
+                      contentFit="contain"
+                      transition={500}
+                      cachePolicy="memory-disk"
+                    />
+                  </Animated.View>
+                </View>
+              </Animated.View>
+            </SafeAreaView>
+          </LinearGradient>
+        </Animated.View>
 
         <Animated.View style={[contentAnimatedStyle, styles.content]}>
           {description && (
