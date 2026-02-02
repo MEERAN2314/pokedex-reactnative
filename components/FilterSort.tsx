@@ -112,7 +112,7 @@ export function FilterSort({ visible, onClose, filters, onApplyFilters }: Filter
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <View style={styles.headerLeft}>
               <View style={[styles.headerIcon, { backgroundColor: theme.primary + '20' }]}>
-                <Text style={{ fontSize: 24 }}>🎯</Text>
+                <IconSymbol name="target" size={24} color={theme.primary} />
               </View>
               <Text style={[styles.headerTitle, { color: theme.text }]}>
                 Filter & Sort

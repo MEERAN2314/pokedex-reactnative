@@ -1,3 +1,4 @@
+import { IconSymbol } from '@/components/ui/IconSymbol'
 import { BorderRadius, FontSizes, Spacing, useTheme } from '@/constants/Theme'
 import { useEvolutionChain, usePokemon } from '@/hooks/usePokemon'
 import { EvolutionChainLink, TYPE_COLORS } from '@/types/pokemon'
@@ -35,16 +36,16 @@ function EvolutionStage({ link, currentPokemonName, primaryColor, index, isLast 
     if (!evolutionDetail) return null
     
     if (evolutionDetail.min_level) {
-      return { icon: '📊', text: `Lv. ${evolutionDetail.min_level}` }
+      return { icon: 'chart.bar.fill', text: `Lv. ${evolutionDetail.min_level}` }
     }
     if (evolutionDetail.item) {
       const itemName = evolutionDetail.item.name.replace('-', ' ')
-      return { icon: '💎', text: itemName }
+      return { icon: 'diamond.fill', text: itemName }
     }
     if (evolutionDetail.trigger.name === 'trade') {
-      return { icon: '🔄', text: 'Trade' }
+      return { icon: 'arrow.triangle.2.circlepath', text: 'Trade' }
     }
-    return { icon: '✨', text: evolutionDetail.trigger.name }
+    return { icon: 'sparkles', text: evolutionDetail.trigger.name }
   }
 
   const handlePress = () => {
@@ -86,7 +87,7 @@ function EvolutionStage({ link, currentPokemonName, primaryColor, index, isLast 
           </View>
           {method && (
             <View style={[styles.methodBadge, { backgroundColor: theme.card, borderColor: primaryColor }]}>
-              <Text style={styles.methodIcon}>{method.icon}</Text>
+              <IconSymbol name={method.icon} size={14} color={primaryColor} />
               <Text style={[styles.methodText, { color: theme.text }]}>
                 {method.text}
               </Text>
@@ -125,7 +126,7 @@ function EvolutionStage({ link, currentPokemonName, primaryColor, index, isLast 
           {/* Current Badge */}
           {isCurrent && (
             <View style={[styles.currentBadge, { backgroundColor: typeColor }]}>
-              <Text style={styles.currentBadgeIcon}>⭐</Text>
+              <IconSymbol name="star.fill" size={12} color="white" />
               <Text style={styles.currentBadgeText}>You are here</Text>
             </View>
           )}
@@ -247,7 +248,7 @@ export function EvolutionChainImproved({ evolutionChainUrl, currentPokemonName, 
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <View style={styles.cardHeader}>
           <View style={[styles.cardIcon, { backgroundColor: primaryColor + '20' }]}>
-            <Text style={{ fontSize: 28 }}>🔄</Text>
+            <IconSymbol name="arrow.triangle.2.circlepath" size={28} color={primaryColor} />
           </View>
           <Text style={[styles.cardTitle, { color: theme.text }]}>
             Evolution Chain
@@ -275,7 +276,7 @@ export function EvolutionChainImproved({ evolutionChainUrl, currentPokemonName, 
     <View style={[styles.card, { backgroundColor: theme.card }]}>
       <View style={styles.cardHeader}>
         <View style={[styles.cardIcon, { backgroundColor: primaryColor + '20' }]}>
-          <Text style={{ fontSize: 28 }}>🔄</Text>
+          <IconSymbol name="arrow.triangle.2.circlepath" size={28} color={primaryColor} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.cardTitle, { color: theme.text }]}>
@@ -382,9 +383,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 4,
-  },
-  currentBadgeIcon: {
-    fontSize: 12,
   },
   currentBadgeText: {
     fontSize: 10,
@@ -518,9 +516,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-  },
-  methodIcon: {
-    fontSize: 14,
   },
   methodText: {
     fontSize: 11,

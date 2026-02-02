@@ -150,7 +150,7 @@ export function EvolutionChain({ evolutionChainUrl, currentPokemonName, primaryC
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <View style={styles.cardHeader}>
           <View style={[styles.cardIcon, { backgroundColor: primaryColor + '20' }]}>
-            <Text style={{ fontSize: 22 }}>🔄</Text>
+            <IconSymbol name="arrow.triangle.2.circlepath" size={22} color={primaryColor} />
           </View>
           <Text style={[styles.cardTitle, { color: theme.text }]}>
             Evolution Chain
@@ -178,7 +178,7 @@ export function EvolutionChain({ evolutionChainUrl, currentPokemonName, primaryC
     <View style={[styles.card, { backgroundColor: theme.card }]}>
       <View style={styles.cardHeader}>
         <View style={[styles.cardIcon, { backgroundColor: primaryColor + '20' }]}>
-          <Text style={{ fontSize: 22 }}>🔄</Text>
+          <IconSymbol name="arrow.triangle.2.circlepath" size={22} color={primaryColor} />
         </View>
         <Text style={[styles.cardTitle, { color: theme.text }]}>
           Evolution Chain

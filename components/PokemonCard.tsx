@@ -5,18 +5,13 @@ import * as Haptics from 'expo-haptics'
 import { Image as ExpoImage } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
-import React, { memo, useEffect } from 'react'
+import React, { memo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, {
-    Easing,
     FadeInUp,
-    interpolate,
     useAnimatedStyle,
     useSharedValue,
-    withRepeat,
-    withSequence,
-    withSpring,
-    withTiming
+    withSpring
 } from 'react-native-reanimated'
 import { PokemonType } from './PokemonType'
 
@@ -31,35 +26,11 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ name, url, index }) 
   const pokemonId = url.split('/').slice(-2, -1)[0]
   const { data: pokemon, isLoading, error } = usePokemon(pokemonId)
   
-  const scale = useSharedValue(1)
-  const shimmer = useSharedValue(0)
   const pressScale = useSharedValue(1)
-
-  useEffect(() => {
-    // Continuous subtle shimmer effect
-    shimmer.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    )
-  }, [])
-
-  const shimmerStyle = useAnimatedStyle(() => {
-    const translateX = interpolate(shimmer.value, [0, 1], [-200, 200])
-    return {
-      transform: [{ translateX }],
-      opacity: shimmer.value * 0.2,
-    }
-  })
   
-  const pressAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: pressScale.value }]
-    }
-  })
+  const pressAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pressScale.value }]
+  }))
 
   const handlePressIn = () => {
     pressScale.value = withSpring(0.97, { damping: 15, stiffness: 400 })
@@ -100,13 +71,9 @@ const PokemonCardComponent: React.FC<PokemonCardProps> = ({ name, url, index }) 
             end={{ x: 1, y: 1 }}
             style={styles.gradientCard}
           >
-            {/* Shimmer effect */}
-            <Animated.View style={[styles.shimmer, shimmerStyle]} />
-            
             {/* Decorative circles */}
-            <View style={[styles.decorativeCircle, styles.circle1, { backgroundColor: 'white', opacity: 0.1 }]} />
-            <View style={[styles.decorativeCircle, styles.circle2, { backgroundColor: 'white', opacity: 0.05 }]} />
-            <View style={[styles.decorativeCircle, styles.circle3, { backgroundColor: 'black', opacity: 0.05 }]} />
+            <View style={[styles.decorativeCircle, styles.circle1]} />
+            <View style={[styles.decorativeCircle, styles.circle2]} />
             
             <View style={styles.cardContent}>
               <View style={styles.leftContent}>
@@ -181,36 +148,24 @@ const styles = StyleSheet.create({
     elevation: 10,
     overflow: 'hidden',
   },
-  shimmer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'white',
-    width: 100,
-  },
   decorativeCircle: {
     position: 'absolute',
     borderRadius: 9999,
+    backgroundColor: 'white',
   },
   circle1: {
     width: 140,
     height: 140,
     top: -50,
     right: -50,
+    opacity: 0.1,
   },
   circle2: {
     width: 90,
     height: 90,
     bottom: -30,
     left: -30,
-  },
-  circle3: {
-    width: 70,
-    height: 70,
-    top: 30,
-    left: -20,
+    opacity: 0.05,
   },
   cardContent: {
     flex: 1,

@@ -8,7 +8,6 @@ import { LinearGradient } from 'expo-linear-gradient'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import Animated, {
-  Extrapolate,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -117,17 +116,13 @@ export default function HomeScreen() {
 
   // Filter and sort Pokemon with optimized logic
   const filteredAndSortedPokemon = useMemo(() => {
-    console.log('Filtering Pokemon:', { 
-      total: pokemonList.length, 
-      detailed: detailedPokemon.length,
-      filters 
-    })
-
-    let filtered = [...pokemonList]
+    const startTime = performance.now()
+    
+    let filtered = pokemonList
 
     // Apply type filters with Map lookup (O(1) instead of O(n))
     if (filters.types.length > 0 && pokemonMap.size > 0) {
-      filtered = filtered.filter(item => {
+      filtered = pokemonList.filter(item => {
         const pokemon = pokemonMap.get(item.name)
         if (!pokemon) return true // Keep Pokemon we haven't loaded yet
         return pokemon.types.some(t => filters.types.includes(t.type.name))
@@ -136,7 +131,7 @@ export default function HomeScreen() {
 
     // Apply sorting with optimized logic
     if (pokemonMap.size > 0) {
-      filtered.sort((a, b) => {
+      filtered = [...filtered].sort((a, b) => {
         const pokemonA = pokemonMap.get(a.name)
         const pokemonB = pokemonMap.get(b.name)
         
@@ -172,7 +167,7 @@ export default function HomeScreen() {
       })
     } else if (filters.sortBy === 'number') {
       // For number sorting, we can use the URL which contains the ID
-      filtered.sort((a, b) => {
+      filtered = [...filtered].sort((a, b) => {
         const idA = parseInt(a.url.split('/').filter(Boolean).pop() || '0')
         const idB = parseInt(b.url.split('/').filter(Boolean).pop() || '0')
         const comparison = idA - idB
@@ -180,15 +175,16 @@ export default function HomeScreen() {
       })
     }
 
-    console.log('Filtered result:', filtered.length, 'Pokemon')
+    const endTime = performance.now()
+    console.log(`Filtering took ${(endTime - startTime).toFixed(2)}ms - ${filtered.length}/${pokemonList.length} Pokemon`)
+    
     return filtered
   }, [pokemonList, pokemonMap, filters])
 
-  const handleApplyFilters = (newFilters: FilterOptions) => {
+  const handleApplyFilters = useCallback((newFilters: FilterOptions) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    console.log('Applying filters:', newFilters)
     setFilters(newFilters)
-  }
+  }, [])
 
   const clearFilters = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -199,14 +195,15 @@ export default function HomeScreen() {
     })
   }
 
-  const openFilterModal = () => {
-    console.log('Opening filter modal')
+  const openFilterModal = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setFilterModalVisible(true)
-  }
+  }, [])
 
-  const activeFiltersCount = filters.types.length + (filters.sortBy !== 'number' ? 1 : 0)
-  const hasActiveFilters = activeFiltersCount > 0
+  const activeFiltersCount = useMemo(() => 
+    filters.types.length + (filters.sortBy !== 'number' ? 1 : 0),
+    [filters.types.length, filters.sortBy]
+  )
 
   // Calculate filter statistics
   const filterStats = useMemo(() => {
@@ -224,27 +221,25 @@ export default function HomeScreen() {
     }
   }, [pokemonList.length, filteredAndSortedPokemon.length, filters.types.length])
 
-  console.log('Filter state:', { filterModalVisible, activeFiltersCount, filters, filterStats })
+  console.log('Filter state:', { filterModalVisible, activeFiltersCount, filterStats })
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
+    'worklet'
+    const opacity = Math.max(0.7, Math.min(1, interpolate(
       scrollY.value,
       [0, 50, 100],
-      [1, 0.9, 0.7],
-      Extrapolate.CLAMP
-    )
-    const translateY = interpolate(
+      [1, 0.9, 0.7]
+    )))
+    const translateY = Math.max(-15, Math.min(0, interpolate(
       scrollY.value,
       [0, 100],
-      [0, -15],
-      Extrapolate.CLAMP
-    )
-    const scale = interpolate(
+      [0, -15]
+    )))
+    const scale = Math.max(0.95, Math.min(1, interpolate(
       scrollY.value,
       [0, 100],
-      [1, 0.95],
-      Extrapolate.CLAMP
-    )
+      [1, 0.95]
+    )))
     return {
       opacity,
       transform: [
@@ -255,12 +250,12 @@ export default function HomeScreen() {
   })
 
   const pokeballAnimatedStyle = useAnimatedStyle(() => {
-    const rotate = interpolate(
+    'worklet'
+    const rotate = Math.max(0, Math.min(360, interpolate(
       scrollY.value,
       [0, 200],
-      [0, 360],
-      Extrapolate.CLAMP
-    )
+      [0, 360]
+    )))
     return {
       transform: [{ rotate: `${rotate}deg` }],
     }
@@ -279,6 +274,8 @@ export default function HomeScreen() {
       index={index}
     />
   ), [])
+
+  const keyExtractor = useCallback((item: PokemonListItem) => item.name, [])
 
   const renderFooter = useCallback(() => {
     if (!isFetchingNextPage) return null
@@ -387,7 +384,7 @@ export default function HomeScreen() {
         <AnimatedFlatList
           data={filteredAndSortedPokemon}
           renderItem={renderPokemonCard}
-          keyExtractor={(item) => item.name}
+          keyExtractor={keyExtractor}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
@@ -402,17 +399,13 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
           removeClippedSubviews={true}
-          maxToRenderPerBatch={4}
-          updateCellsBatchingPeriod={100}
-          initialNumToRender={4}
-          windowSize={5}
+          maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={6}
+          windowSize={7}
           getItemLayout={getItemLayout}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
-          decelerationRate="normal"
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-          }}
         />
       </LinearGradient>
 

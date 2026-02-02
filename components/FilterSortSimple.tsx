@@ -84,9 +84,14 @@ export function FilterSortSimple({ visible, onClose, filters, onApplyFilters }: 
         <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>
-              🎯 Filter & Sort
-            </Text>
+            <View style={styles.headerLeft}>
+              <View style={[styles.headerIcon, { backgroundColor: theme.primary + '20' }]}>
+                <Text style={{ fontSize: 24 }}>🎯</Text>
+              </View>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>
+                Filter & Sort
+              </Text>
+            </View>
             <Pressable onPress={onClose} style={[styles.closeButton, { backgroundColor: theme.card }]}>
               <Text style={[styles.closeButtonText, { color: theme.text }]}>✕</Text>
             </Pressable>
@@ -183,7 +188,11 @@ export function FilterSortSimple({ visible, onClose, filters, onApplyFilters }: 
                       ]}>
                         {type}
                       </Text>
-                      {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                      {isSelected && (
+                        <View style={[styles.checkmark, { backgroundColor: typeColor }]}>
+                          <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>✓</Text>
+                        </View>
+                      )}
                     </Pressable>
                   )
                 })}
@@ -197,14 +206,16 @@ export function FilterSortSimple({ visible, onClose, filters, onApplyFilters }: 
               onPress={handleReset}
               style={[styles.resetButton, { backgroundColor: theme.card }]}
             >
-              <Text style={[styles.resetButtonText, { color: theme.gray }]}>🔄 Reset</Text>
+              <Text style={{ fontSize: 18 }}>🔄</Text>
+              <Text style={[styles.resetButtonText, { color: theme.gray }]}>Reset</Text>
             </Pressable>
             
             <Pressable 
               onPress={handleApply}
               style={[styles.applyButton, { backgroundColor: theme.primary }]}
             >
-              <Text style={styles.applyButtonText}>✓ Apply Filters</Text>
+              <Text style={styles.applyButtonText}>Apply Filters</Text>
+              <Text style={{ fontSize: 20 }}>✓</Text>
             </Pressable>
           </View>
         </View>
@@ -239,20 +250,28 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderBottomWidth: 1,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: '900',
   },
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 20,
-    fontWeight: '700',
   },
   scrollContent: {
     flex: 1,
@@ -297,6 +316,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   directionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
@@ -316,7 +338,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
   },
   typeChipText: {
     fontSize: FontSizes.md,
@@ -324,8 +346,11 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   checkmark: {
-    fontSize: 14,
-    fontWeight: '900',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   footer: {
     flexDirection: 'row',
@@ -335,9 +360,12 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.lg,
-    alignItems: 'center',
   },
   resetButtonText: {
     fontSize: FontSizes.md,
@@ -345,9 +373,12 @@ const styles = StyleSheet.create({
   },
   applyButton: {
     flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.lg,
-    alignItems: 'center',
   },
   applyButtonText: {
     fontSize: FontSizes.md,
