@@ -1,7 +1,8 @@
 import { BorderRadius, Spacing } from '@/constants/Theme'
 import { TYPE_COLORS } from '@/types/pokemon'
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text } from 'react-native'
+import Animated, { ZoomIn } from 'react-native-reanimated'
 
 interface PokemonTypeProps {
   type: string
@@ -18,11 +19,14 @@ export const PokemonType: React.FC<PokemonTypeProps> = ({ type, size = 'small' }
   }
 
   return (
-    <View style={[styles.container, sizeStyles[size], { backgroundColor }]}>
+    <Animated.View 
+      entering={ZoomIn.duration(300).delay(100)}
+      style={[styles.container, sizeStyles[size], { backgroundColor }]}
+    >
       <Text style={[styles.text, sizeStyles[size]]}>
         {type}
       </Text>
-    </View>
+    </Animated.View>
   )
 }
 
@@ -33,21 +37,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: Spacing.xs,
     marginBottom: Spacing.xs,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   text: {
     color: 'white',
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'capitalize',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   small: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    fontSize: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    fontSize: 11,
   },
   medium: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    fontSize: 14,
+    fontSize: 13,
   },
   large: {
     paddingHorizontal: Spacing.md,

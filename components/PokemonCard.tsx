@@ -1,13 +1,18 @@
 import { BorderRadius, Spacing, useTheme } from '@/constants/Theme'
 import { usePokemon } from '@/hooks/usePokemon'
 import { TYPE_COLORS } from '@/types/pokemon'
+import * as Haptics from 'expo-haptics'
+import { Image as ExpoImage } from 'expo-image'
 import { router } from 'expo-router'
-import React, { useEffect } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import React, { memo, useEffect } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, {
+    Easing,
     useAnimatedStyle,
     useSharedValue,
-    withSpring
+    withDelay,
+    withSpring,
+    withTiming
 } from 'react-native-reanimated'
 import { PokemonType } from './PokemonType'
 
@@ -17,21 +22,22 @@ interface PokemonCardProps {
   index: number
 }
 
-export const PokemonCard: React.FC<PokemonCardProps> = ({ name, url, index }) => {
+const PokemonCardComponent: React.FC<PokemonCardProps> = ({ name, url, index }) => {
   const theme = useTheme()
   const pokemonId = url.split('/').slice(-2, -1)[0]
   const { data: pokemon, isLoading, error } = usePokemon(pokemonId)
   
-  const scale = useSharedValue(1) // Start at full scale
-  const opacity = useSharedValue(1) // Start visible
-  const translateY = useSharedValue(0) // Start at position
+  const scale = useSharedValue(0.8)
+  const opacity = useSharedValue(0)
+  const translateY = useSharedValue(30)
 
   useEffect(() => {
-    // Simple entrance animation
-    scale.value = withSpring(1.05, { damping: 15, stiffness: 150 }, () => {
-      scale.value = withSpring(1, { damping: 15, stiffness: 150 })
-    })
-  }, [])
+    // Staggered entrance animation
+    const delay = index * 50
+    opacity.value = withDelay(delay, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }))
+    scale.value = withDelay(delay, withSpring(1, { damping: 20, stiffness: 200 }))
+    translateY.value = withDelay(delay, withSpring(0, { damping: 20, stiffness: 150 }))
+  }, [index])
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -52,26 +58,27 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({ name, url, index }) =>
   })
 
   const handlePressIn = () => {
-    pressScale.value = withSpring(0.95, { damping: 15, stiffness: 300 })
+    pressScale.value = withSpring(0.96, { damping: 20, stiffness: 400 })
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }
 
   const handlePressOut = () => {
-    pressScale.value = withSpring(1, { damping: 15, stiffness: 300 })
+    pressScale.value = withSpring(1, { damping: 20, stiffness: 400 })
   }
 
   const handlePress = () => {
-    console.log('Pressed Pokemon:', name, pokemonId)
     router.push(`/pokemon/${pokemonId}`)
   }
 
-  // Always show a card, even if loading
   const primaryType = pokemon?.types?.[0]?.type?.name
+  const secondaryType = pokemon?.types?.[1]?.type?.name
   const backgroundColor = TYPE_COLORS[primaryType] || '#6c757d'
+  const secondaryColor = secondaryType ? TYPE_COLORS[secondaryType] : backgroundColor
   const displayName = pokemon?.name || name
   const displayId = pokemon?.id || pokemonId
 
   return (
-    <Animated.View style={pressAnimatedStyle}>
+    <Animated.View style={[pressAnimatedStyle, { marginHorizontal: Spacing.md, marginVertical: Spacing.xs }]}>
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -79,24 +86,18 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({ name, url, index }) =>
         style={styles.pressable}
       >
         <Animated.View style={[animatedStyle, styles.card, { backgroundColor }]}>
+          {/* Decorative circles */}
+          <View style={[styles.decorativeCircle, styles.circle1, { backgroundColor: secondaryColor, opacity: 0.1 }]} />
+          <View style={[styles.decorativeCircle, styles.circle2, { backgroundColor: 'white', opacity: 0.05 }]} />
+          
           <View style={styles.cardContent}>
             <View style={styles.leftContent}>
-              <Text style={styles.pokemonName}>
+              <Text style={styles.pokemonName} numberOfLines={1}>
                 {displayName}
               </Text>
               <Text style={styles.pokemonId}>
                 #{displayId.toString().padStart(3, '0')}
               </Text>
-              {isLoading && (
-                <Text style={[styles.loadingText, { color: 'white' }]}>
-                  Loading...
-                </Text>
-              )}
-              {error && (
-                <Text style={[styles.loadingText, { color: 'white' }]}>
-                  Error loading
-                </Text>
-              )}
               {pokemon && (
                 <View style={styles.typesContainer}>
                   {pokemon.types.map((type) => (
@@ -107,16 +108,17 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({ name, url, index }) =>
             </View>
             <View style={styles.rightContent}>
               {pokemon?.sprites?.other?.['official-artwork']?.front_default ? (
-                <Image
-                  source={{
-                    uri: pokemon.sprites.other['official-artwork'].front_default ||
-                         pokemon.sprites.front_default
-                  }}
+                <ExpoImage
+                  source={{ uri: pokemon.sprites.other['official-artwork'].front_default }}
                   style={styles.pokemonImage}
-                  resizeMode="contain"
+                  contentFit="contain"
+                  transition={300}
+                  cachePolicy="memory-disk"
                 />
               ) : (
-                <View style={[styles.pokemonImage, styles.placeholderImage]} />
+                <View style={[styles.pokemonImage, styles.placeholderImage]}>
+                  {isLoading && <Text style={styles.loadingDot}>●</Text>}
+                </View>
               )}
             </View>
           </View>
@@ -126,25 +128,44 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({ name, url, index }) =>
   )
 }
 
+export const PokemonCard = memo(PokemonCardComponent)
+
 const styles = StyleSheet.create({
   pressable: {
-    // Add explicit pressable style
+    flex: 1,
   },
   card: {
     padding: Spacing.md,
-    margin: Spacing.sm,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     minHeight: 120,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    borderRadius: 9999,
+  },
+  circle1: {
+    width: 120,
+    height: 120,
+    top: -40,
+    right: -40,
+  },
+  circle2: {
+    width: 80,
+    height: 80,
+    bottom: -20,
+    left: -20,
   },
   cardContent: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    zIndex: 1,
   },
   leftContent: {
     flex: 1,
@@ -152,40 +173,44 @@ const styles = StyleSheet.create({
   },
   rightContent: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
   pokemonName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: 'white',
     textTransform: 'capitalize',
     marginBottom: Spacing.xs,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   pokemonId: {
     fontSize: 14,
     color: 'white',
-    opacity: 0.8,
+    opacity: 0.9,
     marginBottom: Spacing.sm,
+    fontWeight: '600',
   },
   typesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: Spacing.xs,
+    gap: Spacing.xs,
   },
   pokemonImage: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
   },
   placeholderImage: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 40,
-  },
-  loadingContainer: {
-    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 45,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    fontSize: 14,
-    fontStyle: 'italic',
+  loadingDot: {
+    color: 'white',
+    fontSize: 24,
+    opacity: 0.5,
   },
 })
